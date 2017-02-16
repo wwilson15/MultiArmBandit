@@ -35,7 +35,7 @@ public:
 void setup(vector<arm>* pmab, vector<agent>* pagents, int n){ /// sets up agent and MaB vectors
     for (int i = 0; i < n; i++){          arm tempa;
         agent agentt;
-        tempa.mu=rand()%30 + 1;
+        tempa.mu=rand()%35 + 1;
         tempa.sigma=LYRAND;
         agentt.avgw=0; //  starting values
         agentt.pavg=0;
@@ -71,9 +71,7 @@ int choice(vector<agent>* pagents, int n, double epsilon){  // Greedy choice wit
     int temp = 0;
     int sto = rand()%n;
     if( LYRAND > epsilon){
-        sto = 0;
         for(int i=0; i<n; i++){
-        
             if(pagents->at(i).avgw > temp){
                 temp = pagents->at(i).avgw;
                 sto=i;
@@ -106,31 +104,59 @@ void show(vector<arm>* pmab, vector<agent>* pagents, int n){
     cout << "Agent " << i << " Avgw " << pagents->at(i).avgw << endl;
     }
 }
+
+void resetavg(vector<agent>* pagents, int n){
+    for(int i=0; i<n; i++){
+        pagents->at(i).avgw=0;
+        pagents->at(i).pavg=0;
+    }
+}
+
 void learningcurve(double alpha, double epsilon){
-    int n = 5;
-    int iterations = 3000;
-    int stat_runs = 2;
-    int input = 0;
+    int n = 3;         /// Number of arms for learning curve
+    int iterations = 2500;
+    int stat_runs = 30;
+    int input = rand()%n;
     vector<arm> mab;
     vector<agent> agents;
     vector<arm>* pmab = &mab;
     vector<agent>* pagents = &agents;
     setup(pmab, pagents,n);
+    /*pmab->at(0).mu = 33;
+    pmab->at(1).mu = 27;
+    pmab->at(2).mu = 12;
+    pmab->at(0).sigma = 2; // Only used for varying parameters
+    pmab->at(1).sigma = 2;
+    pmab->at(2).sigma = 2; */
     ofstream outputFile;
     outputFile.open("vout.txt");
+    string curve = "learning";  // select which data to output to text file, action curve or learning curve
     
     if(outputFile.is_open()){
         for(int i=0; i<stat_runs; i++){
+            input =1;
             for(int j=0; j<iterations; j++){
                 input = choice(pagents, n, epsilon);
-                outputFile << pagents->at(input).avgw << "\t" << endl;
+                if(curve == "learning"){
+                outputFile << pagents->at(input).avgw << "\t";
+                }
+                if(curve == "action"){
+                    outputFile << input << "\t";
+                }
                 armpull(pmab, input);
                 update(pagents, pmab, input, alpha);
+                //epsilon = epsilon *.999; //epsilon decay
+                //alpha = alpha*.999 alpha decay
+                
             }
+            resetavg(pagents, n);
+            outputFile << "\n" <<endl;
         }
     }
     outputFile.close();
-    //show(pmab,pagents, n); // shows each mu and average winnings for each arm
+    cout << "Learning Curve Complete" << endl;
+    show(pmab,pagents, n); // shows each mu and average winnings for each arm // have to comment out resetavg function for this to work
+    //cout << epsilon << endl;
 }
 
 void testA(double alpha){
@@ -163,7 +189,7 @@ void testA(double alpha){
 
 void testB(double epsilon){
     int n=2;
-    int iterations=100000;
+    int iterations=50000;
     vector<arm> mab;
     vector<agent> agents;
     vector<arm>* pmab = &mab;
@@ -171,8 +197,8 @@ void testB(double epsilon){
     setup(pmab, pagents,n);
 
     
-    int mu1=10;
-    int mu2=-10;
+    int mu1 = 10;
+    int mu2 = -10;
     int sigma = 1;
     pmab->at(0).mu = mu1;
     pmab->at(1).mu = mu2;
@@ -190,15 +216,14 @@ void testB(double epsilon){
     /// "Reset"
 }
 
-
 int main() {
     
     //initial values
     srand(time(NULL));
-    double alpha = .1;
-    double epsilon = .05;
+    double alpha = .05;
+    double epsilon = .25;
     testA(alpha);
-    testB(epsilon);
+    //testB(epsilon);
     learningcurve(alpha, epsilon);
     
 }
