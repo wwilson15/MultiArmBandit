@@ -68,15 +68,20 @@ double generateGaussianNoise(double mu, double sigma){ // Box Muller transformat
     return z0 * sigma + mu;
 }
 int choice(vector<agent>* pagents, int n, double epsilon){  // Greedy choice with small exploration
-    int temp = 0;
+    double temp = 0;
     int sto = rand()%n;
-    if( LYRAND > epsilon){
-        for(int i=0; i<n; i++){
-            if(pagents->at(i).avgw > temp){
-                temp = pagents->at(i).avgw;
-                sto=i;
+    double a = LYRAND;
+    if( a > epsilon){
+        for(int z=0; z<n; z++){
+            if(pagents->at(z).avgw > temp){
+                temp = pagents->at(z).avgw;
+                sto=z;
             }
+            
         }
+    }
+    else{
+        sto=rand()%n;
     }
     return sto;
 }
@@ -184,46 +189,41 @@ void testA(double alpha){
     assert(pagents->at(input).avgw=mu+sigma/2);
     assert(pagents->at(input).avgw=mu-sigma/2);
     cout << "Test A passed" << endl;
-    
 }
-
 void testB(double epsilon){
+    double alpha=.1;
     int n=2;
-    int iterations=50000;
+    int iterations=100000;
     vector<arm> mab;
     vector<agent> agents;
     vector<arm>* pmab = &mab;
     vector<agent>* pagents = &agents;
     setup(pmab, pagents,n);
-
     
-    int mu1 = 10;
-    int mu2 = -10;
-    int sigma = 1;
-    pmab->at(0).mu = mu1;
-    pmab->at(1).mu = mu2;
-    pmab->at(0).sigma = sigma;
-    pmab->at(1).sigma = sigma;
+    pmab->at(0).mu = 10;
+    pmab->at(1).mu = -10;
+    pmab->at(0).sigma = 1;
+    pmab->at(1).sigma = 1;
     
     for(int i=0;i<iterations; i++){
         int input = choice(pagents, n, epsilon);
         armpull(pmab, input);
-        pmab->at(input).count ++;
+        update(pagents,pmab,input,alpha);
+        //pmab->at(input).count++; // isnt working correctly
     }
-    assert(pmab->at(0).count > pmab->at(1).count);
-    
+    assert(pagents->at(0).avgw > pagents->at(1).avgw);
+
     cout << "Test B Passed" << endl;
     /// "Reset"
 }
-
 int main() {
     
     //initial values
     srand(time(NULL));
-    double alpha = .05;
-    double epsilon = .25;
+    double alpha = .1;
+    double epsilon = .05;
     testA(alpha);
-    //testB(epsilon);
+    testB(epsilon);
     learningcurve(alpha, epsilon);
     
 }
